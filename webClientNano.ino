@@ -1,5 +1,5 @@
-// Demo using DHCP and DNS to perform a web client request.
-// 2011-06-08 <jc@wippler.nl> http://opensource.org/licenses/mit-license.php
+// Send an Email on boot
+// Borrowed from a demo of using Ethernet and DHCP to perform a web client request by <jc@wippler.nl> according to http://opensource.org/licenses/mit-license.php
 
 #include <EtherCard.h>
 
@@ -49,7 +49,7 @@ void loop () {
     Serial.println();
     Serial.print("<<< REQ ");
     if (count == 0) {
-      ether.browseUrl(PSTR("/trigger/alarm_triggered/with/key/"), "lazb9E_U7GSP81dyz4Q1e5xotS-G-S4qdAb9WxQxVyG", website, my_callback);
+      ether.browseUrl(PSTR("/trigger/alarm_triggered/with/key/"), "your key", website, my_callback);
     }
   }
   count = count + 1;
