@@ -1,6 +1,8 @@
 // Send an Email on boot
 // Borrowed Demo using DHCP and DNS to perform a web client request from <jc@wippler.nl> according to http://opensource.org/licenses/mit-license.php
 
+// the input pin is intended to beconnected to a relay with nc
+
 // the ENC28J60 Ethernet breakout board needs a particular library
 #include <EtherCard.h>
 
@@ -11,16 +13,29 @@ const char website[] PROGMEM = "maker.ifttt.com";
 
 const char your_code[] PROGMEM = "your code";
 
+Stash stash;
+
 // keeping track of input state
 int val = 0;
 int oldval = 0;
 int inpin = 8;
 
 // debug mode
-int Debug_Mode = 1;
+int Debug_Mode = 1;  // 1 means that Debug_Mode is on, 0 is off
 
 // timer is used to perform tasks at regular intervals
 static uint32_t timer;
+
+
+// called when the client request is complete
+static void my_callback (byte status, word off, word len) {
+  Ethernet::buffer[off+900] = 0;
+  if (Debug_Mode == 1) {
+    Serial.println(">>>");
+    Serial.print((const char*) Ethernet::buffer + off);
+    Serial.println("...");
+  }
+}
 
 // send email for rising edge
 static void Send_Email_Rising_Edge() {
@@ -32,14 +47,8 @@ static void Send_Email_Falling_Edge() {
   ether.browseUrl(PSTR("/trigger/trigger_off/with/key/"), your_code, website, my_callback);
 }
 
-// called when the client request is complete
-static void my_callback (byte status, word off, word len) {
-  Ethernet::buffer[off+300] = 0;
-  if (Debug_Mode == 1) {
-    Serial.println(">>>");
-    Serial.print((const char*) Ethernet::buffer + off);
-    Serial.println("...");
-  }
+static void Send_Start_Up() {
+  ether.browseUrl(PSTR("/trigger/start_up/with/key/"), your_code, website, my_callback);
 }
 
 void setup () {
@@ -77,8 +86,8 @@ void setup () {
   ether.printIp("SRV: ", ether.hisip);
 
   // send Email at boot
-  ether.browseUrl(PSTR("/trigger/start_up/with/key/"), "your code", website, my_callback);
-
+  Send_Start_Up();
+  
   val = digitalRead(inpin);
   oldval = val;
 }
@@ -89,12 +98,12 @@ void loop () {
     oldval = val;
     val = digitalRead(inpin);
     if (oldval == 0) {
-      if (val == 0) {
+      if (val == 1) { // relay connected to nc
         // rising edge detected
         Send_Email_Rising_Edge();
       }
     } else {
-      if (val == 1) {
+      if (val == 0) {
         // falling edge detected
         Send_Email_Falling_Edge();
       }
@@ -106,5 +115,5 @@ void loop () {
       Serial.print("<<< REQ ");
     }
   }
-  count = count + 1;
 }
+
